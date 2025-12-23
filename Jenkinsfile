@@ -106,17 +106,19 @@ pipeline {
                     echo "Waiting for Spring Boot to initialize..."
                     sh "sleep 10"
 
-                    // Dynamic Port Replacement for Tests
-                    // We swap '8080' in the test files with our actual running port '9091'
+                    // Install the reporting library
+                    sh "sudo pip3 install unittest-xml-reporting --break-system-packages"
+
+                    // Port Replacement (Same as before)
                     sh "sed -i 's/8080/${APP_PORT}/g' tests/api_collection.json || true"
-                    // For python, we can just edit the file or pass args. 
-                    // Simple hack: update the hardcoded port in the python script too
                     sh "sed -i 's/8080/${APP_PORT}/g' tests/e2e_test.py || true"
 
                     echo "--- Running API Tests (Newman) ---"
-                    sh "newman run tests/api_collection.json"
+                    // Add --reporters junit to generate API XML reports too!
+                    sh "newman run tests/api_collection.json --reporters cli,junit --reporter-junit-export test-reports/api-results.xml"
 
                     echo "--- Running E2E Tests (Selenium) ---"
+                    // This now generates XML files in 'test-reports' folder
                     sh "python3 tests/e2e_test.py"
                 }
             }
@@ -126,8 +128,10 @@ pipeline {
     post {
         always {
             script {
-                echo '--- Cleanup ---'
-                sh "docker image prune -f"
+                echo '--- Publishing Test Reports ---'
+                // This command tells Jenkins to look for XML files and create the graph
+                junit 'test-reports/*.xml'
+                                sh "docker image prune -f"
                 // Clean up the image tag to save disk space
                 sh "docker rmi ${NEXUS_REGISTRY}/${IMAGE_NAME}:${params.VERSION_TAG} || true"
             }
