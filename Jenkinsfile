@@ -12,7 +12,7 @@ pipeline {
         IMAGE_NAME     = 'e2e-app-sandeep'
         NEXUS_CRED     = 'nexus-auth'
         CONTAINER_NAME = 'e2e-app-sandeep'
-        APP_PORT       = '9099' // Add your unique port here
+        APP_PORT       = '9199' // Add your unique port here
     }
 
     tools {
